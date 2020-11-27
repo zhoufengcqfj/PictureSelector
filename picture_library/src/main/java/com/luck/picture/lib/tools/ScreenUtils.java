@@ -4,8 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.util.DisplayMetrics;
 
-import java.lang.reflect.Field;
-
 /**
  * @author：luck
  * @date：2017-5-30 19:30
@@ -16,7 +14,7 @@ public class ScreenUtils {
      * dp2px
      */
     public static int dip2px(Context context, float dpValue) {
-        final float scale = context.getResources().getDisplayMetrics().density;
+        final float scale = context.getApplicationContext().getResources().getDisplayMetrics().density;
         return (int) (dpValue * scale + 0.5f);
     }
 
@@ -32,17 +30,15 @@ public class ScreenUtils {
         return localDisplayMetrics.heightPixels - getStatusBarHeight(context);
     }
 
+    /**
+     * 获取状态栏高度
+     */
     public static int getStatusBarHeight(Context context) {
-        int statusBarHeight = 0;
-        try {
-            Class<?> c = Class.forName("com.android.internal.R$dimen");
-            Object o = c.newInstance();
-            Field field = c.getField("status_bar_height");
-            int x = (Integer) field.get(o);
-            statusBarHeight = context.getApplicationContext().getResources().getDimensionPixelSize(x);
-        } catch (Exception e) {
-            e.printStackTrace();
+        int result = 0;
+        int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = context.getResources().getDimensionPixelSize(resourceId);
         }
-        return statusBarHeight == 0 ? dip2px(context, 25) : statusBarHeight;
+        return result == 0 ? dip2px(context, 25) : result;
     }
 }

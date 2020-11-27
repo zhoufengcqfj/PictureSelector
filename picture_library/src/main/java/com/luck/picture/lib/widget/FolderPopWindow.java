@@ -3,12 +3,6 @@ package com.luck.picture.lib.widget;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.os.Handler;
-
-import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,11 +11,16 @@ import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.luck.picture.lib.R;
 import com.luck.picture.lib.adapter.PictureAlbumDirectoryAdapter;
 import com.luck.picture.lib.config.PictureSelectionConfig;
 import com.luck.picture.lib.entity.LocalMedia;
 import com.luck.picture.lib.entity.LocalMediaFolder;
+import com.luck.picture.lib.listener.OnAlbumItemClickListener;
 import com.luck.picture.lib.tools.AnimUtils;
 import com.luck.picture.lib.tools.AttrsUtils;
 import com.luck.picture.lib.tools.ScreenUtils;
@@ -37,7 +36,7 @@ import java.util.List;
 public class FolderPopWindow extends PopupWindow {
     private Context context;
     private View window;
-    private RecyclerView recyclerView;
+    private RecyclerView mRecyclerView;
     private PictureAlbumDirectoryAdapter adapter;
     private boolean isDismiss = false;
     private ImageView ivArrowView;
@@ -47,9 +46,9 @@ public class FolderPopWindow extends PopupWindow {
     private int maxHeight;
     private View rootViewBg;
 
-    public FolderPopWindow(Context context, PictureSelectionConfig config) {
+    public FolderPopWindow(Context context) {
         this.context = context;
-        this.config = config;
+        this.config = PictureSelectionConfig.getInstance();
         this.chooseMode = config.chooseMode;
         this.window = LayoutInflater.from(context).inflate(R.layout.picture_window_folder, null);
         this.setContentView(window);
@@ -59,12 +58,19 @@ public class FolderPopWindow extends PopupWindow {
         this.setFocusable(true);
         this.setOutsideTouchable(true);
         this.update();
-        if (config.style != null) {
-            if (config.style.pictureTitleUpResId != 0) {
-                this.drawableUp = ContextCompat.getDrawable(context, config.style.pictureTitleUpResId);
+        if (PictureSelectionConfig.uiStyle != null) {
+            if (PictureSelectionConfig.uiStyle.picture_top_titleArrowUpDrawable != 0) {
+                this.drawableUp = ContextCompat.getDrawable(context, PictureSelectionConfig.uiStyle.picture_top_titleArrowUpDrawable);
             }
-            if (config.style.pictureTitleDownResId != 0) {
-                this.drawableDown = ContextCompat.getDrawable(context, config.style.pictureTitleDownResId);
+            if (PictureSelectionConfig.uiStyle.picture_top_titleArrowDownDrawable != 0) {
+                this.drawableDown = ContextCompat.getDrawable(context, PictureSelectionConfig.uiStyle.picture_top_titleArrowDownDrawable);
+            }
+        } else if (PictureSelectionConfig.style != null) {
+            if (PictureSelectionConfig.style.pictureTitleUpResId != 0) {
+                this.drawableUp = ContextCompat.getDrawable(context, PictureSelectionConfig.style.pictureTitleUpResId);
+            }
+            if (PictureSelectionConfig.style.pictureTitleDownResId != 0) {
+                this.drawableDown = ContextCompat.getDrawable(context, PictureSelectionConfig.style.pictureTitleDownResId);
             }
         } else {
             if (config.isWeChatStyle) {
@@ -75,13 +81,13 @@ public class FolderPopWindow extends PopupWindow {
                     this.drawableUp = ContextCompat.getDrawable(context, config.upResId);
                 } else {
                     // 兼容老的Theme方式
-                    this.drawableUp = AttrsUtils.getTypeValueDrawable(context, R.attr.picture_arrow_up_icon);
+                    this.drawableUp = AttrsUtils.getTypeValueDrawable(context, R.attr.picture_arrow_up_icon, R.drawable.picture_icon_arrow_up);
                 }
                 if (config.downResId != 0) {
                     this.drawableDown = ContextCompat.getDrawable(context, config.downResId);
                 } else {
                     // 兼容老的Theme方式 picture.arrow_down.icon
-                    this.drawableDown = AttrsUtils.getTypeValueDrawable(context, R.attr.picture_arrow_down_icon);
+                    this.drawableDown = AttrsUtils.getTypeValueDrawable(context, R.attr.picture_arrow_down_icon, R.drawable.picture_icon_arrow_down);
                 }
             }
         }
@@ -92,18 +98,35 @@ public class FolderPopWindow extends PopupWindow {
     public void initView() {
         rootViewBg = window.findViewById(R.id.rootViewBg);
         adapter = new PictureAlbumDirectoryAdapter(config);
-        recyclerView = window.findViewById(R.id.folder_list);
-        recyclerView.setLayoutManager(new LinearLayoutManager(context));
-        recyclerView.setAdapter(adapter);
+        mRecyclerView = window.findViewById(R.id.folder_list);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(context));
+        mRecyclerView.setAdapter(adapter);
+        View rootView = window.findViewById(R.id.rootView);
         rootViewBg.setOnClickListener(v -> dismiss());
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            rootView.setOnClickListener(v -> dismiss());
+        }
     }
 
     public void bindFolder(List<LocalMediaFolder> folders) {
         adapter.setChooseMode(chooseMode);
         adapter.bindFolderData(folders);
-        ViewGroup.LayoutParams lp = recyclerView.getLayoutParams();
+        ViewGroup.LayoutParams lp = mRecyclerView.getLayoutParams();
         lp.height = folders != null && folders.size() > 8 ? maxHeight
                 : ViewGroup.LayoutParams.WRAP_CONTENT;
+    }
+
+    public List<LocalMediaFolder> getFolderData() {
+        return adapter.getFolderData();
+    }
+
+    public boolean isEmpty() {
+        return adapter.getFolderData().size() == 0;
+    }
+
+    public LocalMediaFolder getFolder(int position) {
+        return adapter.getFolderData().size() > 0
+                && position < adapter.getFolderData().size() ? adapter.getFolderData().get(position) : null;
     }
 
     public void setArrowImageView(ImageView ivArrowView) {
@@ -123,13 +146,17 @@ public class FolderPopWindow extends PopupWindow {
             isDismiss = false;
             ivArrowView.setImageDrawable(drawableUp);
             AnimUtils.rotateArrow(ivArrowView, true);
+            rootViewBg.animate()
+                    .alpha(1)
+                    .setDuration(250)
+                    .setStartDelay(250).start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void setOnItemClickListener(PictureAlbumDirectoryAdapter.OnItemClickListener onItemClickListener) {
-        adapter.setOnItemClickListener(onItemClickListener);
+    public void setOnAlbumItemClickListener(OnAlbumItemClickListener listener) {
+        adapter.setOnAlbumItemClickListener(listener);
     }
 
     @Override
@@ -137,47 +164,34 @@ public class FolderPopWindow extends PopupWindow {
         if (isDismiss) {
             return;
         }
+        rootViewBg.animate()
+                .alpha(0)
+                .setDuration(50)
+                .start();
         ivArrowView.setImageDrawable(drawableDown);
         AnimUtils.rotateArrow(ivArrowView, false);
         isDismiss = true;
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN) {
-            dismiss4Pop();
-            isDismiss = false;
-        } else {
-            FolderPopWindow.super.dismiss();
-            isDismiss = false;
-        }
-    }
-
-    /**
-     * 在android4.1.1和4.1.2版本关闭PopWindow
-     */
-    private void dismiss4Pop() {
-        new Handler().post(() -> FolderPopWindow.super.dismiss());
+        FolderPopWindow.super.dismiss();
+        isDismiss = false;
     }
 
     /**
      * 设置选中状态
      */
-    public void notifyDataCheckedStatus(List<LocalMedia> medias) {
+    public void updateFolderCheckStatus(List<LocalMedia> result) {
         try {
-            // 获取选中图片
             List<LocalMediaFolder> folders = adapter.getFolderData();
-            for (LocalMediaFolder folder : folders) {
+            int size = folders.size();
+            int resultSize = result.size();
+            for (int i = 0; i < size; i++) {
+                LocalMediaFolder folder = folders.get(i);
                 folder.setCheckedNum(0);
-            }
-            if (medias.size() > 0) {
-                for (LocalMediaFolder folder : folders) {
-                    int num = 0;// 记录当前相册下有多少张是选中的
-                    List<LocalMedia> images = folder.getImages();
-                    for (LocalMedia media : images) {
-                        String path = media.getPath();
-                        for (LocalMedia m : medias) {
-                            if (path.equals(m.getPath())) {
-                                num++;
-                                folder.setCheckedNum(num);
-                            }
-                        }
+                for (int j = 0; j < resultSize; j++) {
+                    LocalMedia media = result.get(j);
+                    if (folder.getName().equals(media.getParentFolderName())
+                            || folder.getBucketId() == -1) {
+                        folder.setCheckedNum(1);
+                        break;
                     }
                 }
             }

@@ -1,11 +1,7 @@
 package com.luck.picture.lib.config;
 
 
-import android.content.ContentResolver;
 import android.content.Context;
-import android.database.Cursor;
-import android.net.Uri;
-import android.provider.MediaStore;
 import android.text.TextUtils;
 
 import com.luck.picture.lib.R;
@@ -15,19 +11,19 @@ import java.io.File;
 /**
  * @author：luck
  * @date：2017-5-24 17:02
- * @describe：图片列表
+ * @describe：PictureMimeType
  */
 
 public final class PictureMimeType {
-    public static final int ofAll() {
+    public static int ofAll() {
         return PictureConfig.TYPE_ALL;
     }
 
-    public static final int ofImage() {
+    public static int ofImage() {
         return PictureConfig.TYPE_IMAGE;
     }
 
-    public static final int ofVideo() {
+    public static int ofVideo() {
         return PictureConfig.TYPE_VIDEO;
     }
 
@@ -38,49 +34,50 @@ public final class PictureMimeType {
      * 不再维护音频相关功能，但可以继续使用但会有机型兼容性问题
      */
     @Deprecated
-    public static final int ofAudio() {
+    public static int ofAudio() {
         return PictureConfig.TYPE_AUDIO;
     }
 
 
-    public static final String ofPNG() {
+    public static String ofPNG() {
         return MIME_TYPE_PNG;
     }
 
-    public static final String ofJPEG() {
+    public static String ofJPEG() {
         return MIME_TYPE_JPEG;
     }
 
-    public static final String ofBMP() {
+    public static String ofBMP() {
         return MIME_TYPE_BMP;
     }
 
-    public static final String ofGIF() {
+    public static String ofGIF() {
         return MIME_TYPE_GIF;
     }
 
-    public static final String ofWEBP() {
+    public static String ofWEBP() {
         return MIME_TYPE_WEBP;
     }
 
-    public static final String of3GP() {
+    public static String of3GP() {
         return MIME_TYPE_3GP;
     }
 
-    public static final String ofMP4() {
+    public static String ofMP4() {
         return MIME_TYPE_MP4;
     }
 
-    public static final String ofMPEG() {
+    public static String ofMPEG() {
         return MIME_TYPE_MPEG;
     }
 
-    public static final String ofAVI() {
+    public static String ofAVI() {
         return MIME_TYPE_AVI;
     }
 
     private final static String MIME_TYPE_PNG = "image/png";
-    private final static String MIME_TYPE_JPEG = "image/jpeg";
+    public final static String MIME_TYPE_JPEG = "image/jpeg";
+    private final static String MIME_TYPE_JPG = "image/jpg";
     private final static String MIME_TYPE_BMP = "image/bmp";
     private final static String MIME_TYPE_GIF = "image/gif";
     private final static String MIME_TYPE_WEBP = "image/webp";
@@ -90,40 +87,9 @@ public final class PictureMimeType {
     private final static String MIME_TYPE_MPEG = "video/mpeg";
     private final static String MIME_TYPE_AVI = "video/avi";
 
-    @Deprecated
-    public static int isPictureType(String pictureType) {
-        switch (pictureType) {
-            case "video/3gp":
-            case "video/3gpp":
-            case "video/3gpp2":
-            case "video/avi":
-            case "video/mp4":
-            case "video/quicktime":
-            case "video/x-msvideo":
-            case "video/x-matroska":
-            case "video/mpeg":
-            case "video/webm":
-            case "video/mp2ts":
-                return PictureConfig.TYPE_VIDEO;
-            case "audio/mpeg":
-            case "audio/amr-wb":
-            case "audio/x-ms-wma":
-            case "audio/x-wav":
-            case "audio/amr":
-            case "audio/wav":
-            case "audio/aac":
-            case "audio/mp4":
-            case "audio/quicktime":
-            case "audio/lamr":
-            case "audio/3gpp":
-                return PictureConfig.TYPE_AUDIO;
-            default:
-                return PictureConfig.TYPE_IMAGE;
-        }
-    }
 
     /**
-     * 是否是gif
+     * isGif
      *
      * @param mimeType
      * @return
@@ -132,112 +98,120 @@ public final class PictureMimeType {
         return mimeType != null && (mimeType.equals("image/gif") || mimeType.equals("image/GIF"));
     }
 
-    /**
-     * 是否是视频
-     *
-     * @param pictureType
-     * @return
-     */
-    @Deprecated
-    public static boolean isVideo(String pictureType) {
-        switch (pictureType) {
-            case "video/3gp":
-            case "video/3gpp":
-            case "video/3gpp2":
-            case "video/avi":
-            case "video/mp4":
-            case "video/quicktime":
-            case "video/x-msvideo":
-            case "video/x-matroska":
-            case "video/mpeg":
-            case "video/webm":
-            case "video/mp2ts":
-                return true;
-            default:
-                return false;
-        }
-    }
 
     /**
-     * 是否是视频
+     * isVideo
      *
      * @param mimeType
      * @return
      */
-    public static boolean eqVideo(String mimeType) {
+    public static boolean isHasVideo(String mimeType) {
         return mimeType != null && mimeType.startsWith(MIME_TYPE_PREFIX_VIDEO);
     }
 
     /**
-     * 是否是音频
+     * isVideo
+     *
+     * @param url
+     * @return
+     */
+    public static boolean isUrlHasVideo(String url) {
+        return url.endsWith(".mp4");
+    }
+
+    /**
+     * isAudio
      *
      * @param mimeType
      * @return
      */
-    public static boolean eqAudio(String mimeType) {
+    public static boolean isHasAudio(String mimeType) {
         return mimeType != null && mimeType.startsWith(MIME_TYPE_PREFIX_AUDIO);
     }
 
     /**
-     * 是否是图片
+     * isImage
      *
      * @param mimeType
      * @return
      */
-    public static boolean eqImage(String mimeType) {
+    public static boolean isHasImage(String mimeType) {
         return mimeType != null && mimeType.startsWith(MIME_TYPE_PREFIX_IMAGE);
     }
 
     /**
-     * 是否是网络图片
+     * Determine if it is JPG.
+     *
+     * @param is image file mimeType
+     */
+    public static boolean isJPEG(String mimeType) {
+        if (TextUtils.isEmpty(mimeType)) {
+            return false;
+        }
+        return mimeType.startsWith(MIME_TYPE_JPEG) || mimeType.startsWith(MIME_TYPE_JPG);
+    }
+
+    /**
+     * Determine if it is JPG.
+     *
+     * @param is image file mimeType
+     */
+    public static boolean isJPG(String mimeType) {
+        if (TextUtils.isEmpty(mimeType)) {
+            return false;
+        }
+        return mimeType.startsWith(MIME_TYPE_JPG);
+    }
+
+
+    /**
+     * is Network image
      *
      * @param path
      * @return
      */
-    public static boolean isHttp(String path) {
-        return !TextUtils.isEmpty(path) && (path.startsWith("http") || path.startsWith("https"));
-    }
-
-    /**
-     * 判断文件类型是图片还是视频
-     *
-     * @param file
-     * @return
-     */
-    public static String fileToType(File file) {
-        if (file != null) {
-            String name = file.getName();
-            if (name.endsWith(".mp4") || name.endsWith(".avi")
-                    || name.endsWith(".3gpp") || name.endsWith(".3gp") || name.endsWith(".mov")) {
-                return MIME_TYPE_VIDEO;
-            } else if (name.endsWith(".PNG") || name.endsWith(".png") || name.endsWith(".jpeg")
-                    || name.endsWith(".gif") || name.endsWith(".GIF") || name.endsWith(".jpg")
-                    || name.endsWith(".webp") || name.endsWith(".WEBP") || name.endsWith(".JPEG")
-                    || name.endsWith(".bmp")) {
-                return MIME_TYPE_IMAGE;
-            } else if (name.endsWith(".mp3") || name.endsWith(".amr")
-                    || name.endsWith(".aac") || name.endsWith(".war")
-                    || name.endsWith(".flac") || name.endsWith(".lamr")) {
-                return MIME_TYPE_AUDIO;
-            }
+    public static boolean isHasHttp(String path) {
+        if (TextUtils.isEmpty(path)) {
+            return false;
         }
-        return MIME_TYPE_IMAGE;
+        return path.startsWith("http")
+                || path.startsWith("https")
+                || path.startsWith("/http")
+                || path.startsWith("/https");
     }
 
     /**
-     * is type Equal
+     * Determine whether the file type is an image or a video
      *
-     * @param p1
-     * @param p2
+     * @param cameraMimeType
      * @return
      */
-    @Deprecated
-    public static boolean mimeToEqual(String p1, String p2) {
-        return isPictureType(p1) == isPictureType(p2);
+    public static String getMimeType(int cameraMimeType) {
+        switch (cameraMimeType) {
+            case PictureConfig.TYPE_VIDEO:
+                return MIME_TYPE_VIDEO;
+            case PictureConfig.TYPE_AUDIO:
+                return MIME_TYPE_AUDIO;
+            default:
+                return MIME_TYPE_IMAGE;
+        }
     }
 
     /**
-     * 是否是同一类型
+     * Determines if the file name is a picture
+     *
+     * @param name
+     * @return
+     */
+    public static boolean isSuffixOfImage(String name) {
+        return !TextUtils.isEmpty(name) && name.endsWith(".PNG") || name.endsWith(".png") || name.endsWith(".jpeg")
+                || name.endsWith(".gif") || name.endsWith(".GIF") || name.endsWith(".jpg")
+                || name.endsWith(".webp") || name.endsWith(".WEBP") || name.endsWith(".JPEG")
+                || name.endsWith(".bmp");
+    }
+
+    /**
+     * Is it the same type
      *
      * @param oldMimeType
      * @param newMimeType
@@ -248,13 +222,19 @@ public final class PictureMimeType {
         return getMimeType(oldMimeType) == getMimeType(newMimeType);
     }
 
+    /**
+     * Get Image mimeType
+     *
+     * @param path
+     * @return
+     */
     public static String getImageMimeType(String path) {
         try {
             if (!TextUtils.isEmpty(path)) {
                 File file = new File(path);
                 String fileName = file.getName();
-                int last = fileName.lastIndexOf(".") + 1;
-                String temp = fileName.substring(last);
+                int beginIndex = fileName.lastIndexOf(".");
+                String temp = beginIndex == -1 ? "jpeg" : fileName.substring(beginIndex + 1);
                 return "image/" + temp;
             }
         } catch (Exception e) {
@@ -264,28 +244,6 @@ public final class PictureMimeType {
         return MIME_TYPE_IMAGE;
     }
 
-    /**
-     * 根据uri获取MIME_TYPE
-     *
-     * @param uri
-     * @return
-     */
-    public static String getMimeType(Context context, Uri uri) {
-        if (ContentResolver.SCHEME_CONTENT.equals(uri.getScheme())) {
-            Cursor cursor = context.getApplicationContext().getContentResolver().query(uri,
-                    new String[]{MediaStore.Files.FileColumns.MIME_TYPE}, null, null, null);
-            if (cursor != null) {
-                if (cursor.moveToFirst()) {
-                    int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE);
-                    if (columnIndex > -1) {
-                        return cursor.getString(columnIndex);
-                    }
-                }
-                cursor.close();
-            }
-        }
-        return MIME_TYPE_IMAGE;
-    }
 
     /**
      * Picture or video
@@ -305,45 +263,8 @@ public final class PictureMimeType {
         }
     }
 
-
     /**
-     * 获取图片后缀
-     *
-     * @param path
-     * @return
-     */
-    public static String getLastImgType(String path) {
-        try {
-            int index = path.lastIndexOf(".");
-            if (index > 0) {
-                String imageType = path.substring(index);
-                switch (imageType) {
-                    case ".png":
-                    case ".PNG":
-                    case ".jpg":
-                    case ".jpeg":
-                    case ".JPEG":
-                    case ".WEBP":
-                    case ".bmp":
-                    case ".BMP":
-                    case ".webp":
-                    case ".gif":
-                    case ".GIF":
-                        return imageType;
-                    default:
-                        return PNG;
-                }
-            } else {
-                return PNG;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return PNG;
-        }
-    }
-
-    /**
-     * 获取图片后缀
+     * Get image suffix
      *
      * @param mineType
      * @return
@@ -362,35 +283,63 @@ public final class PictureMimeType {
         return defaultSuffix;
     }
 
+
     /**
-     * 根据不同的类型，返回不同的错误提示
+     * is content://
      *
+     * @param url
+     * @return
+     */
+    public static boolean isContent(String url) {
+        if (TextUtils.isEmpty(url)) {
+            return false;
+        }
+        return url.startsWith("content://");
+    }
+
+    /**
+     * Returns an error message by type
+     *
+     * @param context
      * @param mimeType
      * @return
      */
     public static String s(Context context, String mimeType) {
         Context ctx = context.getApplicationContext();
-        if (eqVideo(mimeType)) {
+        if (isHasVideo(mimeType)) {
             return ctx.getString(R.string.picture_video_error);
-        } else if (eqAudio(mimeType)) {
+        } else if (isHasAudio(mimeType)) {
             return ctx.getString(R.string.picture_audio_error);
         } else {
             return ctx.getString(R.string.picture_error);
         }
     }
 
-    public final static String JPEG = ".jpg";
+    public final static String JPEG = ".jpeg";
 
     public final static String PNG = ".png";
 
+    public final static String MP4 = ".mp4";
+
+    public final static String JPEG_Q = "image/jpeg";
+
+    public final static String PNG_Q = "image/png";
+
+    public final static String MP4_Q = "video/mp4";
+
+    public final static String AVI_Q = "video/avi";
+
     public final static String DCIM = "DCIM/Camera";
+
+    public final static String CAMERA = "Camera";
+
     public final static String MIME_TYPE_IMAGE = "image/jpeg";
     public final static String MIME_TYPE_VIDEO = "video/mp4";
     public final static String MIME_TYPE_AUDIO = "audio/mpeg";
 
 
-    public final static String MIME_TYPE_PREFIX_IMAGE = "image";
-    public final static String MIME_TYPE_PREFIX_VIDEO = "video";
-    public final static String MIME_TYPE_PREFIX_AUDIO = "audio";
+    private final static String MIME_TYPE_PREFIX_IMAGE = "image";
+    private final static String MIME_TYPE_PREFIX_VIDEO = "video";
+    private final static String MIME_TYPE_PREFIX_AUDIO = "audio";
 
 }

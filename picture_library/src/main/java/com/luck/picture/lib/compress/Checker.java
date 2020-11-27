@@ -13,6 +13,12 @@ import java.util.Arrays;
 enum Checker {
     SINGLE;
 
+    public final static String MIME_TYPE_JPEG = "image/jpeg";
+
+    public final static String MIME_TYPE_JPG = "image/jpg";
+
+    public final static String MIME_TYPE_HEIC = "image/heic";
+
     private static final String TAG = "Luban";
 
     private static final String JPG = ".jpg";
@@ -26,6 +32,18 @@ enum Checker {
      */
     boolean isJPG(InputStream is) {
         return isJPG(toByteArray(is));
+    }
+
+    /**
+     * Determine if it is JPG.
+     *
+     * @param is image file mimeType
+     */
+    boolean isJPG(String mimeType) {
+        if (TextUtils.isEmpty(mimeType)) {
+            return false;
+        }
+        return mimeType.startsWith(MIME_TYPE_HEIC) || mimeType.startsWith(MIME_TYPE_JPEG) || mimeType.startsWith(MIME_TYPE_JPG);
     }
 
     /**
@@ -152,7 +170,11 @@ enum Checker {
 
     String extSuffix(String mimeType) {
         try {
-            return TextUtils.isEmpty(mimeType) ? "" : mimeType.replace("image/", ".");
+            if (TextUtils.isEmpty(mimeType)) {
+                return JPG;
+            }
+            return mimeType.startsWith("video") ? mimeType.replace("video/", ".")
+                    : mimeType.replace("image/", ".");
         } catch (Exception e) {
             return JPG;
         }

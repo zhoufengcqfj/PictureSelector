@@ -2,16 +2,16 @@ package com.luck.picture.lib.tools;
 
 import android.content.Context;
 import android.net.Uri;
-import android.os.Environment;
-import android.os.ParcelFileDescriptor;
 import android.text.TextUtils;
 
-import com.luck.picture.lib.config.PictureMimeType;
-import com.yalantis.ucrop.util.FileUtils;
+import com.luck.picture.lib.config.PictureSelectionConfig;
 
 import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.util.Objects;
+
+import okio.BufferedSource;
+import okio.Okio;
 
 /**
  * @author：luck
@@ -20,71 +20,6 @@ import java.io.FileInputStream;
  */
 public class AndroidQTransformUtils {
 
-    /**
-     * 解析Android Q版本下视频
-     * #耗时操作需要放在子线程中操作
-     *
-     * @param ctx
-     * @param path
-     * @return
-     */
-    public static String parseVideoPathToAndroidQ(Context ctx, String path, String fileName, String mineType) {
-        try {
-            String suffix = PictureMimeType.getLastImgSuffix(mineType);
-            File filesDir = ctx.getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_MOVIES);
-            if (filesDir != null) {
-                String newPath = new StringBuffer()
-                        .append(filesDir)
-                        .append(File.separator)
-                        .append(TextUtils.isEmpty(fileName) ? DateUtils.getCreateFileName("VID_") + suffix : fileName)
-                        .toString();
-                ParcelFileDescriptor parcelFileDescriptor =
-                        ctx.getContentResolver().openFileDescriptor(Uri.parse(path), "r");
-                FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
-                FileInputStream inputStream = new FileInputStream(fileDescriptor);
-                boolean copyFileSuccess = FileUtils.copyFile(inputStream, newPath);
-                if (copyFileSuccess) {
-                    return newPath;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
-
-    /**
-     * 解析Android Q版本下图片
-     * #耗时操作需要放在子线程中操作
-     *
-     * @param ctx
-     * @param path
-     * @return
-     */
-    public static String parseImagePathToAndroidQ(Context ctx, String path, String fileName, String mineType) {
-        try {
-            String suffix = PictureMimeType.getLastImgSuffix(mineType);
-            String filesDir = PictureFileUtils.getDiskCacheDir(ctx.getApplicationContext());
-            if (filesDir != null) {
-                String newPath = new StringBuffer()
-                        .append(filesDir)
-                        .append(File.separator)
-                        .append(TextUtils.isEmpty(fileName) ? DateUtils.getCreateFileName("IMG_") + suffix : fileName)
-                        .toString();
-                ParcelFileDescriptor parcelFileDescriptor =
-                        ctx.getContentResolver().openFileDescriptor(Uri.parse(path), "r");
-                FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
-                FileInputStream inputStream = new FileInputStream(fileDescriptor);
-                boolean copyFileSuccess = FileUtils.copyFile(inputStream, newPath);
-                if (copyFileSuccess) {
-                    return newPath;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
 
     /**
      * 解析Android Q版本下图片
@@ -92,72 +27,51 @@ public class AndroidQTransformUtils {
      *
      * @param ctx
      * @param uri
-     * @param fileName
-     * @param mimeType
+     * @param mineType
+     * @param customFileName
      * @return
      */
-    public static String copyImagePathToDirectoryPictures(Context ctx, String uri, String fileName,
-                                                          String mimeType) {
+    public static String copyPathToAndroidQ(Context ctx, String url, int width, int height, String mineType, String customFileName) {
+        // 走普通的文件复制流程，拷贝至应用沙盒内来
+        BufferedSource inBuffer = null;
         try {
-            String suffix = PictureMimeType.getLastImgSuffix(mimeType);
-            if (!TextUtils.isEmpty(fileName)) {
-                int lastIndexOf = fileName.lastIndexOf(".");
-                String oldSuffix = fileName.substring(lastIndexOf);
-                fileName = fileName.replace(oldSuffix, suffix);
+            Uri uri = Uri.parse(url);
+            String encryptionValue = StringUtils.getEncryptionValue(url, width, height);
+            String newPath = PictureFileUtils.createFilePath(ctx, encryptionValue, mineType, customFileName);
+            File outFile = new File(newPath);
+            if (outFile.exists()) {
+                return newPath;
             }
-            String filesDir = PictureFileUtils.getDiskCacheDir(ctx.getApplicationContext());
-            if (filesDir != null) {
-                String newPath = new StringBuffer()
-                        .append(filesDir)
-                        .append(File.separator)
-                        .append(TextUtils.isEmpty(fileName) ? DateUtils.getCreateFileName("IMG_") + suffix : fileName)
-                        .toString();
-                ParcelFileDescriptor parcelFileDescriptor =
-                        ctx.getContentResolver().openFileDescriptor(Uri.parse(uri), "r");
-                FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
-                FileInputStream inputStream = new FileInputStream(fileDescriptor);
-                boolean copyFileSuccess = FileUtils.copyFile(inputStream, newPath);
-                if (copyFileSuccess) {
-                    return newPath;
-                }
+            inBuffer = Okio.buffer(Okio.source(Objects.requireNonNull(ctx.getContentResolver().openInputStream(uri))));
+            boolean copyFileSuccess = PictureFileUtils.bufferCopy(inBuffer, outFile);
+            if (copyFileSuccess) {
+                return newPath;
             }
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (inBuffer != null && inBuffer.isOpen()) {
+                PictureFileUtils.close(inBuffer);
+            }
         }
-        return "";
+        return null;
     }
 
     /**
-     * 解析Android Q版本下音频
-     * #耗时操作需要放在子线程中操作
+     * 复制文件至AndroidQ手机相册目录
      *
-     * @param ctx
-     * @param path
-     * @return
+     * @param context
+     * @param inFile
+     * @param outUri
      */
-    public static String parseAudioPathToAndroidQ(Context ctx, String path, String fileName, String mineType) {
+    public static boolean copyPathToDCIM(Context context, File inFile, Uri outUri) {
         try {
-            String suffix = PictureMimeType.getLastImgSuffix(mineType);
-            File filesDir = ctx.getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_MUSIC);
-            if (filesDir != null) {
-                String newPath = new StringBuffer()
-                        .append(filesDir)
-                        .append(File.separator)
-                        .append(TextUtils.isEmpty(fileName) ? DateUtils.getCreateFileName("AUD_") + suffix : fileName)
-                        .toString();
-
-                ParcelFileDescriptor parcelFileDescriptor =
-                        ctx.getApplicationContext().getContentResolver().openFileDescriptor(Uri.parse(path), "r");
-                FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
-                FileInputStream inputStream = new FileInputStream(fileDescriptor);
-                boolean copyFileSuccess = FileUtils.copyFile(inputStream, newPath);
-                if (copyFileSuccess) {
-                    return newPath;
-                }
-            }
+            OutputStream fileOutputStream = context.getContentResolver().openOutputStream(outUri);
+            return PictureFileUtils.bufferCopy(inFile, fileOutputStream);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "";
+        return false;
     }
+
 }

@@ -1,6 +1,7 @@
 package com.yalantis.ucrop;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -15,12 +16,14 @@ import androidx.annotation.FloatRange;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.yalantis.ucrop.model.AspectRatio;
+import com.yalantis.ucrop.model.CutInfo;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -29,11 +32,12 @@ import java.util.Locale;
  * Builder class to ease Intent setup.
  */
 public class UCrop {
-
+    public static final int REQUEST_MULTI_CROP = 609;
     public static final int REQUEST_CROP = 69;
     public static final int RESULT_ERROR = 96;
+    public static final int MIN_SIZE = 10;
 
-    private static final String EXTRA_PREFIX = BuildConfig.APPLICATION_ID;
+    private static final String EXTRA_PREFIX = "com.yalantis.ucrop";
 
     public static final String EXTRA_INPUT_URI = EXTRA_PREFIX + ".InputUri";
     public static final String EXTRA_OUTPUT_URI = EXTRA_PREFIX + ".OutputUri";
@@ -50,9 +54,6 @@ public class UCrop {
     public static final String EXTRA_MAX_SIZE_X = EXTRA_PREFIX + ".MaxSizeX";
     public static final String EXTRA_MAX_SIZE_Y = EXTRA_PREFIX + ".MaxSizeY";
 
-    public static final String EXTRA_WINDOW_EXIT_ANIMATION = EXTRA_PREFIX + ".WindowAnimation";
-
-    public static final String EXTRA_NAV_BAR_COLOR = EXTRA_PREFIX + ".navBarColor";
 
     private Intent mCropIntent;
     private Bundle mCropOptionsBundle;
@@ -98,12 +99,20 @@ public class UCrop {
     }
 
     /**
-     * Set maximum size for result cropped image.
+     * Set maximum size for result cropped image. Maximum size cannot be less then {@value MIN_SIZE}
      *
      * @param width  max cropped image width
      * @param height max cropped image height
      */
-    public UCrop withMaxResultSize(@IntRange(from = 100) int width, @IntRange(from = 100) int height) {
+    public UCrop withMaxResultSize(@IntRange(from = MIN_SIZE) int width, @IntRange(from = MIN_SIZE) int height) {
+        if (width < MIN_SIZE) {
+            width = MIN_SIZE;
+        }
+
+        if (height < MIN_SIZE) {
+            height = MIN_SIZE;
+        }
+
         mCropOptionsBundle.putInt(EXTRA_MAX_SIZE_X, width);
         mCropOptionsBundle.putInt(EXTRA_MAX_SIZE_Y, height);
         return this;
@@ -119,7 +128,7 @@ public class UCrop {
      *
      * @param activity Activity to receive result
      */
-    public void startAnimation(@NonNull Activity activity, @AnimRes int activityCropEnterAnimation) {
+    public void startAnimationActivity(@NonNull Activity activity, @AnimRes int activityCropEnterAnimation) {
         if (activityCropEnterAnimation != 0) {
             start(activity, REQUEST_CROP, activityCropEnterAnimation);
         } else {
@@ -139,11 +148,21 @@ public class UCrop {
     }
 
     /**
+     * Send the crop Intent from an Activity with a custom request code
+     *
+     * @param activity    Activity to receive result
+     * @param requestCode requestCode for result
+     */
+    public void start(@NonNull Activity activity, int requestCode) {
+        activity.startActivityForResult(getIntent(activity), requestCode);
+    }
+
+    /**
      * Send the crop Intent from an Activity
      *
      * @param activity Activity to receive result
      */
-    public void start(@NonNull Activity activity) {
+    public void start(@NonNull AppCompatActivity activity) {
         start(activity, REQUEST_CROP);
     }
 
@@ -153,7 +172,7 @@ public class UCrop {
      * @param activity    Activity to receive result
      * @param requestCode requestCode for result
      */
-    public void start(@NonNull Activity activity, int requestCode) {
+    public void start(@NonNull AppCompatActivity activity, int requestCode) {
         activity.startActivityForResult(getIntent(activity), requestCode);
     }
 
@@ -176,6 +195,69 @@ public class UCrop {
         fragment.startActivityForResult(getIntent(context), requestCode);
     }
 
+
+    /**
+     * 多图裁剪
+     */
+    /**
+     * Send the crop Intent from animation an Multiple Activity
+     *
+     * @param activity Activity to receive result
+     */
+    public void startAnimationMultipleCropActivity(@NonNull Activity activity,
+                                                   @AnimRes int activityCropEnterAnimation) {
+        if (activityCropEnterAnimation != 0) {
+            startMultiple(activity, REQUEST_MULTI_CROP, activityCropEnterAnimation);
+        } else {
+            startMultiple(activity, REQUEST_MULTI_CROP);
+        }
+    }
+
+    /**
+     * Send the crop Intent from an Activity with a custom request code or animation
+     *
+     * @param activity    Activity to receive result
+     * @param requestCode requestCode for result
+     */
+    public void startMultiple(@NonNull Activity activity, int requestCode, @AnimRes int activityCropEnterAnimation) {
+        activity.startActivityForResult(getMultipleIntent(activity), requestCode);
+        activity.overridePendingTransition(activityCropEnterAnimation, R.anim.ucrop_anim_fade_in);
+    }
+
+    /**
+     * Send the crop Intent from an Activity
+     *
+     * @param activity Activity to receive result
+     */
+    public void startMultiple(@NonNull Activity activity) {
+        start(activity, REQUEST_MULTI_CROP);
+    }
+
+    /**
+     * Send the crop Intent from an Activity with a custom request code
+     *
+     * @param activity    Activity to receive result
+     * @param requestCode requestCode for result
+     */
+    public void startMultiple(@NonNull Activity activity, int requestCode) {
+        activity.startActivityForResult(getMultipleIntent(activity), requestCode);
+    }
+
+    /**
+     * Get Intent to start {@link PictureMultiCuttingActivity}
+     *
+     * @return Intent for {@link PictureMultiCuttingActivity}
+     */
+    public Intent getMultipleIntent(@NonNull Context context) {
+        mCropIntent.setClass(context, PictureMultiCuttingActivity.class);
+        mCropIntent.putExtras(mCropOptionsBundle);
+        return mCropIntent;
+    }
+
+    /**
+     * *********************多图裁剪结束配制*********************
+     */
+
     /**
      * Get Intent to start {@link UCropActivity}
      *
@@ -186,6 +268,7 @@ public class UCrop {
         mCropIntent.putExtras(mCropOptionsBundle);
         return mCropIntent;
     }
+
 
     /**
      * Retrieve cropped image Uri from the result Intent
@@ -222,7 +305,7 @@ public class UCrop {
      * @return aspect ratio as a floating point value (x:y) - so it will be 1 for 1:1 or 4/3 for 4:3
      */
     public static float getOutputCropAspectRatio(@NonNull Intent intent) {
-        return intent.getParcelableExtra(EXTRA_OUTPUT_CROP_ASPECT_RATIO);
+        return intent.getFloatExtra(EXTRA_OUTPUT_CROP_ASPECT_RATIO, 0f);
     }
 
     /**
@@ -236,6 +319,15 @@ public class UCrop {
         return (Throwable) result.getSerializableExtra(EXTRA_ERROR);
     }
 
+    /**
+     * Multiple Retrieve cropped image Cuts from the result Intent
+     *
+     * @param intent crop result intent
+     */
+    @Nullable
+    public static List<CutInfo> getMultipleOutput(@NonNull Intent intent) {
+        return intent.getParcelableArrayListExtra(UCrop.Options.EXTRA_OUTPUT_URI_LIST);
+    }
 
     /**
      * Class that helps to setup advanced configs that are not commonly used.
@@ -268,32 +360,39 @@ public class UCrop {
         public static final String EXTRA_TOOL_BAR_COLOR = EXTRA_PREFIX + ".ToolbarColor";
         public static final String EXTRA_STATUS_BAR_COLOR = EXTRA_PREFIX + ".StatusBarColor";
         public static final String EXTRA_UCROP_COLOR_WIDGET_ACTIVE = EXTRA_PREFIX + ".UcropColorWidgetActive";
+        public static final String EXTRA_UCROP_COLOR_CONTROLS_WIDGET_ACTIVE = EXTRA_PREFIX + ".UcropColorControlsWidgetActive";
 
         public static final String EXTRA_UCROP_WIDGET_COLOR_TOOLBAR = EXTRA_PREFIX + ".UcropToolbarWidgetColor";
         public static final String EXTRA_UCROP_TITLE_TEXT_TOOLBAR = EXTRA_PREFIX + ".UcropToolbarTitleText";
         public static final String EXTRA_UCROP_WIDGET_CANCEL_DRAWABLE = EXTRA_PREFIX + ".UcropToolbarCancelDrawable";
         public static final String EXTRA_UCROP_WIDGET_CROP_DRAWABLE = EXTRA_PREFIX + ".UcropToolbarCropDrawable";
 
-        public static final String EXTRA_UCROP_WIDGET_CROP_OPEN_WHITE_STATUSBAR = EXTRA_PREFIX + ".openWhiteStatusBar";
-
         public static final String EXTRA_UCROP_LOGO_COLOR = EXTRA_PREFIX + ".UcropLogoColor";
 
         public static final String EXTRA_HIDE_BOTTOM_CONTROLS = EXTRA_PREFIX + ".HideBottomControls";
         public static final String EXTRA_FREE_STYLE_CROP = EXTRA_PREFIX + ".FreeStyleCrop";
-
-        public static final String EXTRA_CUT_CROP = EXTRA_PREFIX + ".cuts";
-
-        public static final String EXTRA_FREE_STATUS_FONT = EXTRA_PREFIX + ".StatusFont";
 
         public static final String EXTRA_ASPECT_RATIO_SELECTED_BY_DEFAULT = EXTRA_PREFIX + ".AspectRatioSelectedByDefault";
         public static final String EXTRA_ASPECT_RATIO_OPTIONS = EXTRA_PREFIX + ".AspectRatioOptions";
 
         public static final String EXTRA_UCROP_ROOT_VIEW_BACKGROUND_COLOR = EXTRA_PREFIX + ".UcropRootViewBackgroundColor";
 
-        public static final String EXTRA_ROTATE = EXTRA_PREFIX + ".rotate";
-        public static final String EXTRA_SCALE = EXTRA_PREFIX + ".scale";
-
+        // more
+        public static final String EXTRA_UCROP_WIDGET_CROP_OPEN_WHITE_STATUSBAR = EXTRA_PREFIX + ".openWhiteStatusBar";
+        public static final String EXTRA_DIMMED_LAYER_BORDER_COLOR = EXTRA_PREFIX + ".DimmedLayerBorderColor";
+        public static final String EXTRA_CIRCLE_STROKE_WIDTH_LAYER = EXTRA_PREFIX + ".CircleStrokeWidth";
         public static final String EXTRA_DRAG_CROP_FRAME = EXTRA_PREFIX + ".DragCropFrame";
+        public static final String EXTRA_SCALE = EXTRA_PREFIX + ".scale";
+        public static final String EXTRA_ROTATE = EXTRA_PREFIX + ".rotate";
+        public static final String EXTRA_NAV_BAR_COLOR = EXTRA_PREFIX + ".navBarColor";
+        public static final String EXTRA_SKIP_MULTIPLE_CROP = EXTRA_PREFIX + ".skip_multiple_crop";
+        public static final String EXTRA_RENAME_CROP_FILENAME = EXTRA_PREFIX + ".RenameCropFileName";
+        public static final String EXTRA_CAMERA = EXTRA_PREFIX + ".isCamera";
+        public static final String EXTRA_MULTIPLE_RECYCLERANIMATION = ".isMultipleAnimation";
+        public static final String EXTRA_CUT_CROP = EXTRA_PREFIX + ".cuts";
+        public static final String EXTRA_WITH_VIDEO_IMAGE = EXTRA_PREFIX + ".isWithVideoImage";
+        public static final String EXTRA_OUTPUT_URI_LIST = EXTRA_PREFIX + ".OutputUriList";
+        public static final String EXTRA_WINDOW_EXIT_ANIMATION = EXTRA_PREFIX + ".WindowAnimation";
 
         private final Bundle mOptionBundle;
 
@@ -307,7 +406,7 @@ public class UCrop {
         }
 
         /**
-         * Set one of {@link Bitmap.CompressFormat} that will be used to save resulting Bitmap.
+         * Set one of {@link android.graphics.Bitmap.CompressFormat} that will be used to save resulting Bitmap.
          */
         public void setCompressionFormat(@NonNull Bitmap.CompressFormat format) {
             mOptionBundle.putString(EXTRA_COMPRESSION_FORMAT_NAME, format.name());
@@ -318,6 +417,49 @@ public class UCrop {
          */
         public void setCompressionQuality(@IntRange(from = 0) int compressQuality) {
             mOptionBundle.putInt(EXTRA_COMPRESSION_QUALITY, compressQuality);
+        }
+
+        /**
+         * Set the custom clipping output file name
+         *
+         * @param renameCropFileName
+         */
+        public void setRenameCropFileName(String renameCropFileName) {
+            mOptionBundle.putString(EXTRA_RENAME_CROP_FILENAME, renameCropFileName);
+        }
+
+        /**
+         * Whether taking pictures
+         *
+         * @param isCamera
+         */
+        public void isCamera(boolean isCamera) {
+            mOptionBundle.putBoolean(EXTRA_CAMERA, isCamera);
+        }
+
+
+        /**
+         * Whether the multi-graph clipping list is animated or not
+         *
+         * @param isAnimation
+         */
+        public void isMultipleRecyclerAnimation(boolean isAnimation) {
+            mOptionBundle.putBoolean(EXTRA_MULTIPLE_RECYCLERANIMATION, isAnimation);
+        }
+
+
+        /**
+         * @param -set cuts path
+         */
+        public void setCutListData(ArrayList<CutInfo> list) {
+            mOptionBundle.putParcelableArrayList(EXTRA_CUT_CROP, list);
+        }
+
+        /**
+         * @param isWithVideoImage Whether pictures and videos can coexist
+         */
+        public void isWithVideoImage(boolean isWithVideoImage) {
+            mOptionBundle.putBoolean(EXTRA_WITH_VIDEO_IMAGE, isWithVideoImage);
         }
 
         /**
@@ -343,7 +485,7 @@ public class UCrop {
          *
          * @param durationMillis - duration in milliseconds
          */
-        public void setImageToCropBoundsAnimDuration(@IntRange(from = 100) int durationMillis) {
+        public void setImageToCropBoundsAnimDuration(@IntRange(from = MIN_SIZE) int durationMillis) {
             mOptionBundle.putInt(EXTRA_IMAGE_TO_CROP_BOUNDS_ANIM_DURATION, durationMillis);
         }
 
@@ -352,7 +494,7 @@ public class UCrop {
          *
          * @param maxBitmapSize - size in pixels
          */
-        public void setMaxBitmapSize(@IntRange(from = 100) int maxBitmapSize) {
+        public void setMaxBitmapSize(@IntRange(from = MIN_SIZE) int maxBitmapSize) {
             mOptionBundle.putInt(EXTRA_MAX_BITMAP_SIZE, maxBitmapSize);
         }
 
@@ -361,6 +503,25 @@ public class UCrop {
          */
         public void setDimmedLayerColor(@ColorInt int color) {
             mOptionBundle.putInt(EXTRA_DIMMED_LAYER_COLOR, color);
+        }
+
+
+        /**
+         * @param color - desired border color of dimmed area around the crop bounds
+         */
+        public void setDimmedLayerBorderColor(@ColorInt int color) {
+            if (color != 0) {
+                mOptionBundle.putInt(EXTRA_DIMMED_LAYER_BORDER_COLOR, color);
+            }
+        }
+
+        /**
+         * @param width Set the circular clipping border
+         */
+        public void setCircleStrokeWidth(int width) {
+            if (width > 0) {
+                mOptionBundle.putInt(EXTRA_CIRCLE_STROKE_WIDTH_LAYER, width);
+            }
         }
 
         /**
@@ -405,19 +566,21 @@ public class UCrop {
             mOptionBundle.putBoolean(EXTRA_DRAG_CROP_FRAME, isDragFrame);
         }
 
-        public void setScaleEnabled(boolean scaleEnabled) {
-            mOptionBundle.putBoolean(EXTRA_SCALE, scaleEnabled);
-        }
-
-        public void setRotateEnabled(boolean rotateEnabled) {
-            mOptionBundle.putBoolean(EXTRA_ROTATE, rotateEnabled);
-        }
 
         /**
          * @param count - crop grid rows count.
          */
         public void setCropGridRowCount(@IntRange(from = 0) int count) {
             mOptionBundle.putInt(EXTRA_CROP_GRID_ROW_COUNT, count);
+        }
+
+        public void setScaleEnabled(boolean scaleEnabled) {
+            mOptionBundle.putBoolean(EXTRA_SCALE, scaleEnabled);
+        }
+
+
+        public void setRotateEnabled(boolean rotateEnabled) {
+            mOptionBundle.putBoolean(EXTRA_ROTATE, rotateEnabled);
         }
 
         /**
@@ -448,6 +611,14 @@ public class UCrop {
             mOptionBundle.putInt(EXTRA_TOOL_BAR_COLOR, color);
         }
 
+
+        /**
+         * @param openWhiteStatusBar - Change the status bar font color
+         */
+        public void isOpenWhiteStatusBar(boolean openWhiteStatusBar) {
+            mOptionBundle.putBoolean(EXTRA_UCROP_WIDGET_CROP_OPEN_WHITE_STATUSBAR, openWhiteStatusBar);
+        }
+
         /**
          * @param color - desired resolved color of the statusbar
          */
@@ -456,10 +627,17 @@ public class UCrop {
         }
 
         /**
-         * @param color - desired resolved color of the active and selected widget (default is orange) and progress wheel middle line
+         * @param color - desired resolved color of the progress wheel middle line (default is violet)
          */
         public void setActiveWidgetColor(@ColorInt int color) {
             mOptionBundle.putInt(EXTRA_UCROP_COLOR_WIDGET_ACTIVE, color);
+        }
+
+        /**
+         * @param color - desired resolved color of the active and selected widget (default is white)
+         */
+        public void setActiveControlsWidgetColor(@ColorInt int color) {
+            mOptionBundle.putInt(EXTRA_UCROP_COLOR_CONTROLS_WIDGET_ACTIVE, color);
         }
 
         /**
@@ -467,13 +645,6 @@ public class UCrop {
          */
         public void setToolbarWidgetColor(@ColorInt int color) {
             mOptionBundle.putInt(EXTRA_UCROP_WIDGET_COLOR_TOOLBAR, color);
-        }
-
-        /**
-         * @param openWhiteStatusBar - Change the status bar font color
-         */
-        public void isOpenWhiteStatusBar(boolean openWhiteStatusBar) {
-            mOptionBundle.putBoolean(EXTRA_UCROP_WIDGET_CROP_OPEN_WHITE_STATUSBAR, openWhiteStatusBar);
         }
 
         /**
@@ -505,17 +676,19 @@ public class UCrop {
         }
 
         /**
+         * 多图裁剪时是否可以跳过裁剪
+         *
+         * @param isMultipleSkipCrop
+         */
+        public void isMultipleSkipCrop(boolean isMultipleSkipCrop) {
+            mOptionBundle.putBoolean(EXTRA_SKIP_MULTIPLE_CROP, isMultipleSkipCrop);
+        }
+
+        /**
          * @param hide - set to true to hide the bottom controls (shown by default)
          */
         public void setHideBottomControls(boolean hide) {
             mOptionBundle.putBoolean(EXTRA_HIDE_BOTTOM_CONTROLS, hide);
-        }
-
-        /**
-         * @param -set cuts path
-         */
-        public void setCutListData(ArrayList<String> list) {
-            mOptionBundle.putStringArrayList(EXTRA_CUT_CROP, list);
         }
 
         /**
@@ -526,10 +699,20 @@ public class UCrop {
         }
 
         /**
-         * @param statusFont - Set status bar black
+         * @param activityCropExitAnimation activity exit animation
          */
-        public void setStatusFont(boolean statusFont) {
-            mOptionBundle.putBoolean(EXTRA_FREE_STATUS_FONT, statusFont);
+        public void setCropExitAnimation(@AnimRes int activityCropExitAnimation) {
+            mOptionBundle.putInt(EXTRA_WINDOW_EXIT_ANIMATION, activityCropExitAnimation);
+        }
+
+
+        /**
+         * @param navBarColor set NavBar Color
+         */
+        public void setNavBarColor(@ColorInt int navBarColor) {
+            if (navBarColor != 0) {
+                mOptionBundle.putInt(EXTRA_NAV_BAR_COLOR, navBarColor);
+            }
         }
 
         /**
@@ -582,24 +765,11 @@ public class UCrop {
          * @param width  max cropped image width
          * @param height max cropped image height
          */
-        public void withMaxResultSize(int width, int height) {
+        public void withMaxResultSize(@IntRange(from = MIN_SIZE) int width, @IntRange(from = MIN_SIZE) int height) {
             mOptionBundle.putInt(EXTRA_MAX_SIZE_X, width);
             mOptionBundle.putInt(EXTRA_MAX_SIZE_Y, height);
         }
 
-        /**
-         * @param activityCropExitAnimation activity exit animation
-         */
-        public void setCropExitAnimation(@AnimRes int activityCropExitAnimation) {
-            mOptionBundle.putInt(EXTRA_WINDOW_EXIT_ANIMATION, activityCropExitAnimation);
-        }
-
-        /**
-         * @param navBarColor set NavBar Color
-         */
-        public void setNavBarColor(@ColorInt int navBarColor) {
-            mOptionBundle.putInt(EXTRA_NAV_BAR_COLOR, navBarColor);
-        }
     }
 
 }

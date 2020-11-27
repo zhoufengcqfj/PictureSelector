@@ -1,9 +1,6 @@
 package com.luck.pictureselector.adapter;
 
 import android.content.Context;
-
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
@@ -13,24 +10,26 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.luck.picture.lib.config.PictureMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
+import com.luck.picture.lib.listener.OnItemClickListener;
 import com.luck.picture.lib.tools.DateUtils;
-import com.luck.picture.lib.tools.SdkVersionUtils;
 import com.luck.pictureselector.R;
+import com.luck.pictureselector.listener.OnItemLongClickListener;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+
 /**
- * author：luck
- * project：PictureSelector
- * package：com.luck.pictureselector.adapter
- * email：893855882@qq.com
- * data：16/7/27
+ * @author：luck
+ * @date：2016-7-27 23:02
+ * @describe：GridImageAdapter
  */
 public class GridImageAdapter extends
         RecyclerView.Adapter<GridImageAdapter.ViewHolder> {
@@ -40,7 +39,6 @@ public class GridImageAdapter extends
     private LayoutInflater mInflater;
     private List<LocalMedia> list = new ArrayList<>();
     private int selectMax = 9;
-    private boolean isAndroidQ;
     /**
      * 点击添加图片跳转
      */
@@ -50,10 +48,25 @@ public class GridImageAdapter extends
         void onAddPicClick();
     }
 
+    /**
+     * 删除
+     */
+    public void delete(int position) {
+        try {
+
+            if (position != RecyclerView.NO_POSITION && list.size() > position) {
+                list.remove(position);
+                notifyItemRemoved(position);
+                notifyItemRangeChanged(position, list.size());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public GridImageAdapter(Context context, onAddPicClickListener mOnAddPicClickListener) {
         this.mInflater = LayoutInflater.from(context);
         this.mOnAddPicClickListener = mOnAddPicClickListener;
-        this.isAndroidQ = SdkVersionUtils.checkedAndroid_Q();
     }
 
     public void setSelectMax(int selectMax) {
@@ -62,6 +75,16 @@ public class GridImageAdapter extends
 
     public void setList(List<LocalMedia> list) {
         this.list = list;
+    }
+
+    public List<LocalMedia> getData() {
+        return list == null ? new ArrayList<>() : list;
+    }
+
+    public void remove(int position) {
+        if (list != null && position < list.size()) {
+            list.remove(position);
+        }
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
@@ -170,7 +193,7 @@ public class GridImageAdapter extends
             }
 
             long duration = media.getDuration();
-            viewHolder.tvDuration.setVisibility(PictureMimeType.eqVideo(media.getMimeType())
+            viewHolder.tvDuration.setVisibility(PictureMimeType.isHasVideo(media.getMimeType())
                     ? View.VISIBLE : View.GONE);
             if (chooseModel == PictureMimeType.ofAudio()) {
                 viewHolder.tvDuration.setVisibility(View.VISIBLE);
@@ -186,7 +209,7 @@ public class GridImageAdapter extends
                 viewHolder.mImg.setImageResource(R.drawable.picture_audio_placeholder);
             } else {
                 Glide.with(viewHolder.itemView.getContext())
-                        .load(isAndroidQ && !media.isCut() && !media.isCompressed() ? Uri.parse(path)
+                        .load(PictureMimeType.isContent(path) && !media.isCut() && !media.isCompressed() ? Uri.parse(path)
                                 : path)
                         .centerCrop()
                         .placeholder(R.color.app_color_f6)
@@ -197,19 +220,29 @@ public class GridImageAdapter extends
             if (mItemClickListener != null) {
                 viewHolder.itemView.setOnClickListener(v -> {
                     int adapterPosition = viewHolder.getAdapterPosition();
-                    mItemClickListener.onItemClick(adapterPosition, v);
+                    mItemClickListener.onItemClick(v, adapterPosition);
+                });
+            }
+
+            if (mItemLongClickListener != null) {
+                viewHolder.itemView.setOnLongClickListener(v -> {
+                    int adapterPosition = viewHolder.getAdapterPosition();
+                    mItemLongClickListener.onItemLongClick(viewHolder, adapterPosition, v);
+                    return true;
                 });
             }
         }
     }
 
-    protected OnItemClickListener mItemClickListener;
+    private OnItemClickListener mItemClickListener;
 
-    public interface OnItemClickListener {
-        void onItemClick(int position, View v);
+    public void setOnItemClickListener(OnItemClickListener l) {
+        this.mItemClickListener = l;
     }
 
-    public void setOnItemClickListener(OnItemClickListener listener) {
-        this.mItemClickListener = listener;
+    private OnItemLongClickListener mItemLongClickListener;
+
+    public void setItemLongClickListener(OnItemLongClickListener l) {
+        this.mItemLongClickListener = l;
     }
 }

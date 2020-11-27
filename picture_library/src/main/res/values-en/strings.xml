@@ -9,10 +9,10 @@
     <string name="picture_message_audio_max_num">Select up to %1$s Audio</string>
     <string name="picture_message_video_max_num">Select up to %1$s Video</string>
     <string name="picture_preview">Preview</string>
-    <string name="picture_please">Please later...</string>
+    <string name="picture_please">Please later…</string>
     <string name="picture_done_front_num">%1$d/%2$d Ok</string>
     <string name="picture_completed">Completed</string>
-    <string name="picture_done">Ok</string>
+    <string name="picture_done">Complete</string>
     <string name="picture_please_select">Please Select</string>
     <string name="picture_empty_title">No video or photos\n</string>
     <string name="picture_empty_audio_title">No audio file\n</string>
@@ -45,9 +45,20 @@
     <string name="picture_preview_image_num">%1$d/%2$d</string>
     <string name="picture_not_crop_data">No cropped data</string>
     <string name="picture_original_image">Original</string>
-    <string name="picture_send">Send</string>
-    <string name="picture_send_num">Send(%1$d/%2$d)</string>
+    <string name="picture_send">Complete</string>
+    <string name="picture_send_num">Complete(%1$d/%2$d)</string>
     <string name="picture_preview_num">Preview(%1$d)</string>
     <string name="picture_select">Choose</string>
-    <string name="picture_data_exception">Get album data exception...</string>
+    <string name="picture_data_exception">Get album data exception…</string>
+    <string name="picture_recording_time_is_short">recording time is too short</string>
+    <string name="picture_photo_camera">Photograph, photograph</string>
+    <string name="picture_choose_max_seconds">You can only select videos within %1$ds</string>
+    <string name="picture_choose_min_seconds">You cannot select a video less than %1$ds</string>
+    <string name="picture_choose_limit_seconds">Only videos from %1$ds to %2$ds can be selected</string>
+
+    <string name="picture_photo_pictures">Take Picture</string>
+    <string name="picture_photo_recording">Long Press Camera</string>
+    <string name="picture_go_setting">Go Setting</string>
+    <string name="picture_know">I know the</string>
+    <string name="picture_data_null">There no data here…</string>
 </resources>

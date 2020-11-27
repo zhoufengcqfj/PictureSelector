@@ -57,7 +57,7 @@ public class PicturePlayAudioActivity extends PictureBaseActivity implements Vie
         musicSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser == true) {
+                if (fromUser) {
                     mediaPlayer.seekTo(progress);
                 }
             }
@@ -123,14 +123,9 @@ public class PicturePlayAudioActivity extends PictureBaseActivity implements Vie
         }
         if (i == R.id.tv_Quit) {
             handler.removeCallbacks(runnable);
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    stop(audio_path);
-                }
-            }, 30);
+            new Handler().postDelayed(() -> stop(audio_path), 30);
             try {
-                closeActivity();
+                exit();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -156,7 +151,7 @@ public class PicturePlayAudioActivity extends PictureBaseActivity implements Vie
             tv_musicStatus.setText(getString(R.string.picture_pause_audio));
             playOrPause();
         }
-        if (isPlayAudio == false) {
+        if (!isPlayAudio) {
             handler.post(runnable);
             isPlayAudio = true;
         }
@@ -201,7 +196,7 @@ public class PicturePlayAudioActivity extends PictureBaseActivity implements Vie
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        closeActivity();
+        exit();
     }
 
     @Override

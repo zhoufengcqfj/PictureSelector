@@ -23,6 +23,7 @@ import com.yalantis.ucrop.util.RectUtils;
 
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Oleksii Shliama (https://github.com/shliama).
@@ -81,9 +82,10 @@ public class CropImageView extends TransformImageView {
         final CropParameters cropParameters = new CropParameters(
                 mMaxResultImageSizeX, mMaxResultImageSizeY,
                 compressFormat, compressQuality,
-                getImageInputUri(), getImageOutputPath(), getExifInfo());
+                getImageInputPath(), getImageOutputPath(), getExifInfo());
 
-        new BitmapCropTask(getContext(), getViewBitmap(), imageState, cropParameters, cropCallback).execute();
+        new BitmapCropTask(getContext(), getViewBitmap(), imageState, cropParameters, cropCallback)
+                .executeOnExecutor(Executors.newCachedThreadPool());
     }
 
     /**
@@ -347,7 +349,7 @@ public class CropImageView extends TransformImageView {
         float deltaRight = unrotatedImageRect.right - unrotatedCropRect.right;
         float deltaBottom = unrotatedImageRect.bottom - unrotatedCropRect.bottom;
 
-        float indents[] = new float[4];
+        float[] indents = new float[4];
         indents[0] = (deltaLeft > 0) ? deltaLeft : 0;
         indents[1] = (deltaTop > 0) ? deltaTop : 0;
         indents[2] = (deltaRight < 0) ? deltaRight : 0;

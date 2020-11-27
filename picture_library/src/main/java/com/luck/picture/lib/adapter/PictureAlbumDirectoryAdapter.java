@@ -1,20 +1,22 @@
 package com.luck.picture.lib.adapter;
 
 import android.content.Context;
-
-import androidx.recyclerview.widget.RecyclerView;
-
+import android.graphics.drawable.Drawable;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.luck.picture.lib.R;
 import com.luck.picture.lib.config.PictureMimeType;
 import com.luck.picture.lib.config.PictureSelectionConfig;
-import com.luck.picture.lib.entity.LocalMedia;
 import com.luck.picture.lib.entity.LocalMediaFolder;
+import com.luck.picture.lib.listener.OnAlbumItemClickListener;
+import com.luck.picture.lib.tools.AttrsUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,21 +24,19 @@ import java.util.List;
 /**
  * @author：luck
  * @date：2016-12-11 17:02
- * @describe：文件夹目录
+ * @describe：PictureAlbumDirectoryAdapter
  */
 public class PictureAlbumDirectoryAdapter extends RecyclerView.Adapter<PictureAlbumDirectoryAdapter.ViewHolder> {
     private List<LocalMediaFolder> folders = new ArrayList<>();
     private int chooseMode;
-    private PictureSelectionConfig config;
 
     public PictureAlbumDirectoryAdapter(PictureSelectionConfig config) {
         super();
-        this.config = config;
         this.chooseMode = config.chooseMode;
     }
 
     public void bindFolderData(List<LocalMediaFolder> folders) {
-        this.folders = folders;
+        this.folders = folders == null ? new ArrayList<>() : folders;
         notifyDataSetChanged();
     }
 
@@ -45,10 +45,7 @@ public class PictureAlbumDirectoryAdapter extends RecyclerView.Adapter<PictureAl
     }
 
     public List<LocalMediaFolder> getFolderData() {
-        if (folders == null) {
-            folders = new ArrayList<>();
-        }
-        return folders;
+        return folders == null ? new ArrayList<>() : folders;
     }
 
     @Override
@@ -68,13 +65,21 @@ public class PictureAlbumDirectoryAdapter extends RecyclerView.Adapter<PictureAl
         int checkedNum = folder.getCheckedNum();
         holder.tvSign.setVisibility(checkedNum > 0 ? View.VISIBLE : View.INVISIBLE);
         holder.itemView.setSelected(isChecked);
+        if (PictureSelectionConfig.uiStyle != null) {
+            if (PictureSelectionConfig.uiStyle.picture_album_backgroundStyle != 0) {
+                holder.itemView.setBackgroundResource(PictureSelectionConfig.uiStyle.picture_album_backgroundStyle);
+            }
+        } else if (PictureSelectionConfig.style != null) {
+            if (PictureSelectionConfig.style.pictureAlbumStyle != 0) {
+                holder.itemView.setBackgroundResource(PictureSelectionConfig.style.pictureAlbumStyle);
+            }
+        }
         if (chooseMode == PictureMimeType.ofAudio()) {
             holder.ivFirstImage.setImageResource(R.drawable.picture_audio_placeholder);
         } else {
-            if (config != null && config.imageEngine != null) {
-                config.imageEngine
-                        .loadFolderImage(holder.itemView.getContext(),
-                                imagePath, holder.ivFirstImage);
+            if (PictureSelectionConfig.imageEngine != null) {
+                PictureSelectionConfig.imageEngine.loadFolderImage(holder.itemView.getContext(),
+                        imagePath, holder.ivFirstImage);
             }
         }
         Context context = holder.itemView.getContext();
@@ -83,13 +88,15 @@ public class PictureAlbumDirectoryAdapter extends RecyclerView.Adapter<PictureAl
                 : context.getString(R.string.picture_camera_roll) : name;
         holder.tvFolderName.setText(context.getString(R.string.picture_camera_roll_num, firstTitle, imageNum));
         holder.itemView.setOnClickListener(view -> {
-            if (onItemClickListener != null) {
-                for (LocalMediaFolder mediaFolder : folders) {
+            if (onAlbumItemClickListener != null) {
+                int size = folders.size();
+                for (int i = 0; i < size; i++) {
+                    LocalMediaFolder mediaFolder = folders.get(i);
                     mediaFolder.setChecked(false);
                 }
                 folder.setChecked(true);
                 notifyDataSetChanged();
-                onItemClickListener.onItemClick(folder.isCameraFolder(), folder.getName(), folder.getImages());
+                onAlbumItemClickListener.onItemClick(position, folder.isCameraFolder(), folder.getBucketId(), folder.getName(), folder.getData());
             }
         });
     }
@@ -99,7 +106,7 @@ public class PictureAlbumDirectoryAdapter extends RecyclerView.Adapter<PictureAl
         return folders.size();
     }
 
-    class ViewHolder extends RecyclerView.ViewHolder {
+    static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivFirstImage;
         TextView tvFolderName, tvSign;
 
@@ -108,19 +115,44 @@ public class PictureAlbumDirectoryAdapter extends RecyclerView.Adapter<PictureAl
             ivFirstImage = itemView.findViewById(R.id.first_image);
             tvFolderName = itemView.findViewById(R.id.tv_folder_name);
             tvSign = itemView.findViewById(R.id.tv_sign);
-            if (config.style != null && config.style.pictureFolderCheckedDotStyle != 0) {
-                tvSign.setBackgroundResource(config.style.pictureFolderCheckedDotStyle);
+            if (PictureSelectionConfig.uiStyle != null) {
+                if (PictureSelectionConfig.uiStyle.picture_album_checkDotStyle != 0) {
+                    tvSign.setBackgroundResource(PictureSelectionConfig.uiStyle.picture_album_checkDotStyle);
+                }
+                if (PictureSelectionConfig.uiStyle.picture_album_textColor != 0) {
+                    tvFolderName.setTextColor(PictureSelectionConfig.uiStyle.picture_album_textColor);
+                }
+                if (PictureSelectionConfig.uiStyle.picture_album_textSize > 0) {
+                    tvFolderName.setTextSize(PictureSelectionConfig.uiStyle.picture_album_textSize);
+                }
+            } else if (PictureSelectionConfig.style != null) {
+                if (PictureSelectionConfig.style.pictureFolderCheckedDotStyle != 0) {
+                    tvSign.setBackgroundResource(PictureSelectionConfig.style.pictureFolderCheckedDotStyle);
+                }
+                if (PictureSelectionConfig.style.folderTextColor != 0) {
+                    tvFolderName.setTextColor(PictureSelectionConfig.style.folderTextColor);
+                }
+                if (PictureSelectionConfig.style.folderTextSize > 0) {
+                    tvFolderName.setTextSize(PictureSelectionConfig.style.folderTextSize);
+                }
+            } else {
+                Drawable folderCheckedDotDrawable = AttrsUtils.getTypeValueDrawable(itemView.getContext(), R.attr.picture_folder_checked_dot, R.drawable.picture_orange_oval);
+                tvSign.setBackground(folderCheckedDotDrawable);
+                int folderTextColor = AttrsUtils.getTypeValueColor(itemView.getContext(), R.attr.picture_folder_textColor);
+                if (folderTextColor != 0) {
+                    tvFolderName.setTextColor(folderTextColor);
+                }
+                float folderTextSize = AttrsUtils.getTypeValueSize(itemView.getContext(), R.attr.picture_folder_textSize);
+                if (folderTextSize > 0) {
+                    tvFolderName.setTextSize(TypedValue.COMPLEX_UNIT_PX, folderTextSize);
+                }
             }
         }
     }
 
-    private OnItemClickListener onItemClickListener;
+    private OnAlbumItemClickListener onAlbumItemClickListener;
 
-    public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
-        this.onItemClickListener = onItemClickListener;
-    }
-
-    public interface OnItemClickListener {
-        void onItemClick(boolean isCameraFolder, String folderName, List<LocalMedia> images);
+    public void setOnAlbumItemClickListener(OnAlbumItemClickListener listener) {
+        this.onAlbumItemClickListener = listener;
     }
 }

@@ -1,8 +1,11 @@
 package com.luck.picture.lib.entity;
 
+
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
+
+import com.luck.picture.lib.config.PictureConfig;
 
 /**
  * @author：luck
@@ -19,6 +22,15 @@ public class LocalMedia implements Parcelable {
      * original path
      */
     private String path;
+
+    /**
+     * The real path，But you can't get access from AndroidQ
+     * <p>
+     * It could be empty
+     * <p/>
+     */
+    private String realPath;
+
     /**
      * # Check the original button to get the return value
      * original path
@@ -45,6 +57,7 @@ public class LocalMedia implements Parcelable {
     private long duration;
     /**
      * If the selected
+     * # Internal use
      */
     private boolean isChecked;
     /**
@@ -75,10 +88,14 @@ public class LocalMedia implements Parcelable {
     private boolean compressed;
     /**
      * image or video width
+     * <p>
+     * # If zero occurs, the developer needs to handle it extra
      */
     private int width;
     /**
      * image or video height
+     * <p>
+     * # If zero occurs, the developer needs to handle it extra
      */
     private int height;
 
@@ -97,6 +114,40 @@ public class LocalMedia implements Parcelable {
      */
     private String fileName;
 
+    /**
+     * Parent  Folder Name
+     */
+    private String parentFolderName;
+
+    /**
+     * orientation info
+     * # For internal use only
+     */
+    private int orientation = -1;
+
+    /**
+     * loadLongImageStatus
+     * # For internal use only
+     */
+    public int loadLongImageStatus = PictureConfig.NORMAL;
+
+    /**
+     * isLongImage
+     * # For internal use only
+     */
+    public boolean isLongImage;
+
+    /**
+     * bucketId
+     */
+    private long bucketId = -1;
+
+    /**
+     * isMaxSelectEnabledMask
+     * # For internal use only
+     */
+    private boolean isMaxSelectEnabledMask;
+
     public LocalMedia() {
 
     }
@@ -108,17 +159,34 @@ public class LocalMedia implements Parcelable {
         this.mimeType = mimeType;
     }
 
-    public LocalMedia(long id, String path, String fileName, long duration, int chooseModel,
+    public LocalMedia(long id, String path, String fileName, String parentFolderName, long duration, int chooseModel,
                       String mimeType, int width, int height, long size) {
         this.id = id;
         this.path = path;
         this.fileName = fileName;
+        this.parentFolderName = parentFolderName;
         this.duration = duration;
         this.chooseModel = chooseModel;
         this.mimeType = mimeType;
         this.width = width;
         this.height = height;
         this.size = size;
+    }
+
+    public LocalMedia(long id, String path, String absolutePath, String fileName, String parentFolderName, long duration, int chooseModel,
+                      String mimeType, int width, int height, long size, long bucketId) {
+        this.id = id;
+        this.path = path;
+        this.realPath = absolutePath;
+        this.fileName = fileName;
+        this.parentFolderName = parentFolderName;
+        this.duration = duration;
+        this.chooseModel = chooseModel;
+        this.mimeType = mimeType;
+        this.width = width;
+        this.height = height;
+        this.size = size;
+        this.bucketId = bucketId;
     }
 
     public LocalMedia(String path, long duration,
@@ -171,6 +239,13 @@ public class LocalMedia implements Parcelable {
         this.duration = duration;
     }
 
+    public String getRealPath() {
+        return realPath;
+    }
+
+    public void setRealPath(String realPath) {
+        this.realPath = realPath;
+    }
 
     public boolean isChecked() {
         return isChecked;
@@ -285,6 +360,39 @@ public class LocalMedia implements Parcelable {
         this.id = id;
     }
 
+    public String getParentFolderName() {
+        return parentFolderName;
+    }
+
+    public void setParentFolderName(String parentFolderName) {
+        this.parentFolderName = parentFolderName;
+    }
+
+    public int getOrientation() {
+        return orientation;
+    }
+
+    public void setOrientation(int orientation) {
+        this.orientation = orientation;
+    }
+
+    public long getBucketId() {
+        return bucketId;
+    }
+
+    public void setBucketId(long bucketId) {
+        this.bucketId = bucketId;
+    }
+
+    public boolean isMaxSelectEnabledMask() {
+        return isMaxSelectEnabledMask;
+    }
+
+    public void setMaxSelectEnabledMask(boolean maxSelectEnabledMask) {
+        isMaxSelectEnabledMask = maxSelectEnabledMask;
+    }
+
+
     @Override
     public int describeContents() {
         return 0;
@@ -294,6 +402,7 @@ public class LocalMedia implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeLong(this.id);
         dest.writeString(this.path);
+        dest.writeString(this.realPath);
         dest.writeString(this.originalPath);
         dest.writeString(this.compressPath);
         dest.writeString(this.cutPath);
@@ -311,11 +420,18 @@ public class LocalMedia implements Parcelable {
         dest.writeLong(this.size);
         dest.writeByte(this.isOriginal ? (byte) 1 : (byte) 0);
         dest.writeString(this.fileName);
+        dest.writeString(this.parentFolderName);
+        dest.writeInt(this.orientation);
+        dest.writeInt(this.loadLongImageStatus);
+        dest.writeByte(this.isLongImage ? (byte) 1 : (byte) 0);
+        dest.writeLong(this.bucketId);
+        dest.writeByte(this.isMaxSelectEnabledMask ? (byte) 1 : (byte) 0);
     }
 
     protected LocalMedia(Parcel in) {
         this.id = in.readLong();
         this.path = in.readString();
+        this.realPath = in.readString();
         this.originalPath = in.readString();
         this.compressPath = in.readString();
         this.cutPath = in.readString();
@@ -333,6 +449,12 @@ public class LocalMedia implements Parcelable {
         this.size = in.readLong();
         this.isOriginal = in.readByte() != 0;
         this.fileName = in.readString();
+        this.parentFolderName = in.readString();
+        this.orientation = in.readInt();
+        this.loadLongImageStatus = in.readInt();
+        this.isLongImage = in.readByte() != 0;
+        this.bucketId = in.readLong();
+        this.isMaxSelectEnabledMask = in.readByte() != 0;
     }
 
     public static final Creator<LocalMedia> CREATOR = new Creator<LocalMedia>() {

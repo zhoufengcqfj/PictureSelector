@@ -17,11 +17,12 @@ public class SdkVersionUtils {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
     }
 
-    public static boolean hasICS() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH;
-    }
-
-    public static boolean hasKitKat() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+    /**
+     * 判断是否是Android R版本
+     *
+     * @return
+     */
+    public static boolean checkedAndroid_R() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
     }
 }
